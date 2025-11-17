@@ -5,7 +5,7 @@ import axios from 'axios';
 // This is the user we are simulating
 const MOCK_USER_ID = 'user123'; 
 const MOCK_USER_DID = 'did:example:user-rohan-xyz'; // This DID is fine as a mock
-const ISSUER_SERVICE_URL = 'http://localhost:3002';
+const ISSUER_SERVICE_URL = 'https://keepsake-issuer-service.onrender.com';
 // ---------------------
 
 interface Props {
