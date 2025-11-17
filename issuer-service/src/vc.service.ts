@@ -57,17 +57,10 @@ export const createSignedVcJwt = async (
       .update(JSON.stringify(payload))
       .final();
     
-    // --- THIS IS THE DEBUGGING STEP ---
-    // We will log this object to the Render console to see its structure.
-    console.log("--- DEBUG: Full 'tokenResult' from node-jose ---");
-    console.log(tokenResult);
-    console.log("-------------------------------------------------");
-    // --- END DEBUGGING STEP ---
-
-    // The demo will still fail, but the log will tell us the fix.
-    // We are now explicitly returning the object property we *think* is right.
-    // If this fails, the log above will tell us the *correct* property.
-    return (tokenResult as any).jws as string;
+    // --- THIS IS THE FIX ---
+    // The debug log proved 'tokenResult' IS the string.
+    // We cast to 'unknown' first to satisfy TypeScript's strict check.
+    return tokenResult as unknown as string;
 
   } catch (error) {
     console.error("Error creating signed VC:", error);
