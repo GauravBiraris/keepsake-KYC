@@ -53,15 +53,21 @@ export const createSignedVcJwt = async (
     // 4. Create and sign the JWT
     // We let the 'key' object provide the 'alg' and 'kid'
     // We only need to specify the 'typ' (type) field.
-    const result = await jose.JWS.createSign({ format: 'compact', fields: { typ: 'vc+jwt' } }, key)
+    const tokenResult = await jose.JWS.createSign({ format: 'compact', fields: { typ: 'vc+jwt' } }, key)
       .update(JSON.stringify(payload))
       .final();
     
-    // --- THIS IS THE CRITICAL LINE ---
-    // The 'result' is an object like { jws: "..." }.
-    // We must return the 'jws' property, which is the compact JWT string.
-    return (result as any).jws as string;
-    // --- END OF CRITICAL LINE ---
+    // --- THIS IS THE DEBUGGING STEP ---
+    // We will log this object to the Render console to see its structure.
+    console.log("--- DEBUG: Full 'tokenResult' from node-jose ---");
+    console.log(tokenResult);
+    console.log("-------------------------------------------------");
+    // --- END DEBUGGING STEP ---
+
+    // The demo will still fail, but the log will tell us the fix.
+    // We are now explicitly returning the object property we *think* is right.
+    // If this fails, the log above will tell us the *correct* property.
+    return (tokenResult as any).jws as string;
 
   } catch (error) {
     console.error("Error creating signed VC:", error);
