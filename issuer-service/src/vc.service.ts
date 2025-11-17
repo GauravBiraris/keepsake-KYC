@@ -53,11 +53,14 @@ export const createSignedVcJwt = async (
 // 4. Create and sign the JWT
 // We let the 'key' object provide the 'alg' and 'kid'
 // We only need to specify the 'typ' (type) field.
-const token = await jose.JWS.createSign({ format: 'compact', fields: { typ: 'vc+jwt' } }, key)
-  .update(JSON.stringify(payload))
-  .final();
+const result = await jose.JWS.createSign({ format: 'compact', fields: { typ: 'vc+jwt' } }, key)
+      .update(JSON.stringify(payload))
+      .final();
 
-return token as unknown as  string;
+// The 'result' is an object like { jws: "..." }.
+    // We must return the 'jws' property, which is the compact JWT string.
+    return (result as any).jws as string;
+    
 
   } catch (error) {
     console.error("Error creating signed VC:", error);
