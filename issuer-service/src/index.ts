@@ -20,28 +20,26 @@ app.use(express.json());
 
 /**
  * [ADMIN] POST /register-issuer
- * One-time setup. Generates this service's keys, saves them to its
- * local DB, and registers its public key with the Mock Trust Layer.
  */
 app.post('/register-issuer', async (req: Request, res: Response) => {
   try {
-    // 1. Check if already registered
     const existing = await db.query('SELECT * FROM issuer_identity', []);
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Issuer is already registered.' });
     }
-
-    // 2. Generate new keys
     const { privateKeyJwk, publicKeyJwk } = await generateEcKeyPair();
     const issuerDid = `did:example:issuer-${Date.now()}`;
+    
+    // Ensure MOCK_TRUST_LAYER_URL is loaded
+    if (!MOCK_TRUST_LAYER_URL) {
+      throw new Error("MOCK_TRUST_LAYER_URL is not defined in .env");
+    }
 
-    // 3. Register with the Mock Trust Layer
     await axios.post(`${MOCK_TRUST_LAYER_URL}/issuers`, {
       issuer_did: issuerDid,
-      public_key: JSON.stringify(publicKeyJwk), // Send public key as a string
+      public_key: JSON.stringify(publicKeyJwk), 
     });
     
-    // 4. Save *both* keys to our local DB
     await db.query(
       'INSERT INTO issuer_identity (issuer_did, private_key_jwk, public_key_jwk) VALUES ($1, $2, $3)',
       [issuerDid, privateKeyJwk, publicKeyJwk]
@@ -60,8 +58,6 @@ app.post('/register-issuer', async (req: Request, res: Response) => {
 
 /**
  * [USER] POST /issue/pan
- * Issues a PAN Verification Credential (Schema 2)
- * Body: { "userId": "user103", "userDid": "did:example:user-rohan-xyz" }
  */
 app.post('/issue/pan', async (req: Request, res: Response) => {
   const { userId, userDid } = req.body;
@@ -70,21 +66,18 @@ app.post('/issue/pan', async (req: Request, res: Response) => {
   }
 
   try {
-    // 1. Get this issuer's identity
     const issuerRow = await db.query('SELECT * FROM issuer_identity LIMIT 1', []);
     if (issuerRow.rows.length === 0) {
       return res.status(500).json({ error: 'Issuer not registered. Run POST /register-issuer first.' });
     }
     const issuer = issuerRow.rows[0];
 
-    // 2. Get the "source of truth" data for this user
     const userRow = await db.query('SELECT * FROM mock_user_data WHERE user_id = $1', [userId]);
     if (userRow.rows.length === 0) {
       return res.status(404).json({ error: 'User not found in issuer database.' });
     }
     const userData = userRow.rows[0];
 
-    // 3. Build the Credential Subject (Schema 2)
     const credentialSubject = {
       type: "PanVerification",
       pan: userData.pan_number,
@@ -92,7 +85,7 @@ app.post('/issue/pan', async (req: Request, res: Response) => {
       verificationSource: "InternalBankDB-NSDL-Simulated"
     };
 
-    // 4. Create and sign the token
+    // 4. Create and sign the token (this returns a string)
     const token = await createSignedVcJwt(
       issuer.issuer_did,
       userDid,
@@ -101,7 +94,11 @@ app.post('/issue/pan', async (req: Request, res: Response) => {
       "PanVerificationCredential"
     );
 
+    // --- THIS IS THE CRITICAL LINE ---
+    // We MUST send it as a JSON object with the "vcJwt" key.
+    // Your CLI is built to expect this.
     res.status(200).json({ vcJwt: token });
+    // --- END OF CRITICAL LINE ---
 
   } catch (err: any) {
     console.error(err);
@@ -111,8 +108,6 @@ app.post('/issue/pan', async (req: Request, res: Response) => {
 
 /**
  * [USER] POST /issue/address
- * Issues an Address Verification Credential (Schema 4, with 'district')
- * Body: { "userId": "user103", "userDid": "did:example:user-rohan-xyz" }
  */
 app.post('/issue/address', async (req: Request, res: Response) => {
   const { userId, userDid } = req.body;
@@ -121,21 +116,18 @@ app.post('/issue/address', async (req: Request, res: Response) => {
   }
 
   try {
-    // 1. Get this issuer's identity
     const issuerRow = await db.query('SELECT * FROM issuer_identity LIMIT 1', []);
     if (issuerRow.rows.length === 0) {
       return res.status(500).json({ error: 'Issuer not registered. Run POST /register-issuer first.' });
     }
     const issuer = issuerRow.rows[0];
 
-    // 2. Get the "source of truth" data
     const userRow = await db.query('SELECT * FROM mock_user_data WHERE user_id = $1', [userId]);
     if (userRow.rows.length === 0) {
       return res.status(404).json({ error: 'User not found.' });
     }
     const userData = userRow.rows[0];
     
-    // 3. Build the Credential Subject (Schema 4 - updated)
     const credentialSubject = {
       type: "AddressVerification",
       address: {
@@ -148,7 +140,6 @@ app.post('/issue/address', async (req: Request, res: Response) => {
       verificationDate: new Date().toISOString().split('T')[0] // YYYY-MM-DD
     };
 
-    // 4. Create and sign the token
     const token = await createSignedVcJwt(
       issuer.issuer_did,
       userDid,
@@ -156,8 +147,10 @@ app.post('/issue/address', async (req: Request, res: Response) => {
       credentialSubject,
       "AddressVerificationCredential"
     );
-
+    
+    // --- THIS IS THE CRITICAL LINE ---
     res.status(200).json({ vcJwt: token });
+    // --- END OF CRITICAL LINE ---
 
   } catch (err: any) {
     console.error(err);
