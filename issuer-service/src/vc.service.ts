@@ -48,19 +48,20 @@ export const createSignedVcJwt = async (
       },
     };
 
-// 3. Define the JWT header (Removed manual header)
+    // 3. Define the JWT header (Removed manual header)
 
-// 4. Create and sign the JWT
-// We let the 'key' object provide the 'alg' and 'kid'
-// We only need to specify the 'typ' (type) field.
-const result = await jose.JWS.createSign({ format: 'compact', fields: { typ: 'vc+jwt' } }, key)
+    // 4. Create and sign the JWT
+    // We let the 'key' object provide the 'alg' and 'kid'
+    // We only need to specify the 'typ' (type) field.
+    const result = await jose.JWS.createSign({ format: 'compact', fields: { typ: 'vc+jwt' } }, key)
       .update(JSON.stringify(payload))
       .final();
-
-// The 'result' is an object like { jws: "..." }.
+    
+    // --- THIS IS THE CRITICAL LINE ---
+    // The 'result' is an object like { jws: "..." }.
     // We must return the 'jws' property, which is the compact JWT string.
     return (result as any).jws as string;
-    
+    // --- END OF CRITICAL LINE ---
 
   } catch (error) {
     console.error("Error creating signed VC:", error);
