@@ -13,7 +13,7 @@ export const VerifierDemo: React.FC<Props> = ({
     <div className="verifier-demo">
       <p>
         When you click "Present for Verification" on a card, this area will show
-        the result from the Verifier Service (Port 3003).
+        the result from the Verifier Service, that can be used by respective verifier.
       </p>
 
       {/* Show Error Message */}
