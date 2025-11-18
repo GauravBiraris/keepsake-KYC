@@ -6,7 +6,7 @@ import { VerifierDemo } from './components/VerifierDemo';
 import './App.css';
 
 // --- Configuration ---
-const VERIFIER_SERVICE_URL = 'http://localhost:3003';
+const VERIFIER_SERVICE_URL = 'https://keepsake-kyc.onrender.com';
 const WALLET_STORAGE_KEY = 'kycWallet';
 // ---------------------
 
