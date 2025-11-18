@@ -72,12 +72,12 @@ function App() {
 
       <div className="App-content">
         <div className="column">
-          <h2>Issuer (Port 3002)</h2>
+          <h2>Fetch KYC details from issuer</h2>
           <IssuerControls onCredentialIssued={handleCredentialIssued} />
           
           <hr style={{margin: '24px 0'}} />
 
-          <h2>Verifier (Port 3003)</h2>
+          <h2>Your tokens verified</h2>
           <VerifierDemo
             verificationResult={verificationResult}
             verificationError={verificationError}
